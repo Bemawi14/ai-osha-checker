@@ -1,0 +1,73 @@
+<!-- frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI OSHA Checker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2em;
+    }
+    #result {
+      margin-top: 1em;
+      padding: 1em;
+      border: 1px solid #ccc;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI OSHA Checker</h1>
+  <form id="upload-form">
+    <input type="file" id="file-input" name="file" accept=".pdf,.docx" multiple required />
+    <button type="submit">Check Document</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('upload-form');
+    const resultBox = document.getElementById('result');
+  
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const files = document.getElementById('file-input').files;
+  
+      if (!files.length) return;
+  
+      resultBox.innerHTML = "<strong>Analyzing files...</strong><br>";
+  
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file); // single file per request
+  
+        try {
+          const response = await fetch('http://127.0.0.1:8000/analyze/', {
+            method: 'POST',
+            body: formData
+          });
+  
+          const result = await response.json();
+  
+          const output = document.createElement('div');
+          output.innerHTML = `<strong>${file.name}</strong>: `;
+  
+          if (result.report_required) {
+            output.innerHTML += `✅ Report Required<br><ul>${result.reason.map(r => `<li>${r}</li>`).join('')}</ul>`;
+          } else {
+            output.innerHTML += `❌ No Report Required<br>Reason: ${result.reason.join(', ')}`;
+          }
+  
+          resultBox.appendChild(output);
+        } catch (err) {
+          const error = document.createElement('div');
+          error.innerHTML = `<strong>${file.name}</strong>: ❌ Error analyzing document`;
+          resultBox.appendChild(error);
+          console.error(err);
+        }
+      }
+    });
+  </script>  
+</body>
+</html>
